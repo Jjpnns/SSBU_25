@@ -9,6 +9,9 @@ from experiment.experiment import Experiment
 from plotting.experiment_plotter import ExperimentPlotter
 from utils.logger import Logger
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier  # Importujeme nový model
+
 
 def initialize_models_and_params():
     """
@@ -19,11 +22,20 @@ def initialize_models_and_params():
     - param_grids: dict, dictionary of hyperparameter grids.
     """
     models = {
-        "Logistic Regression": LogisticRegression(solver='liblinear')
+        "Logistic Regression": LogisticRegression(solver='liblinear'),
+        "Random Forest": RandomForestClassifier()  # Pridávame nový model
     }
+
     param_grids = {
-        "Logistic Regression": {"C": [0.1, 1, 10], "max_iter": [10000]}
+        "Logistic Regression": {"C": [0.1, 1, 10], "max_iter": [10000]},
+        "Random Forest": {
+            "n_estimators": [50, 100, 200],  # Počet stromov v lese
+            "max_depth": [None, 10, 20],  # Maximálna hĺbka stromu
+            "min_samples_split": [2, 5, 10],  # Min. vzorky na rozdelenie uzla
+            "min_samples_leaf": [1, 2, 4]  # Min. vzorky v liste
+        }
     }
+
     return models, param_grids
 
 
@@ -49,23 +61,25 @@ def run_experiment(dataset, models, param_grids, logger):
 
 
 def plot_results(experiment, results, logger):
-    """
-    Plots the results of the experiment.
-
-    Parameters:
-    - experiment: Experiment instance, the experiment object.
-    - results: DataFrame, the results of the experiment.
-    - logger: Logger instance, for logging messages.
-    """
     logger.info("Generating plots for the experiment results...")
     plotter = ExperimentPlotter()
+
     plotter.plot_metric_density(results)
+
+    # Čiarový graf - presnosť
     plotter.plot_evaluation_metric_over_replications(
         experiment.results.groupby('model')['accuracy'].apply(list).to_dict(),
         'Accuracy per Replication and Average Accuracy', 'Accuracy')
+
+    # Čiarový graf - recall (nový)
+    plotter.plot_evaluation_metric_over_replications(
+        experiment.results.groupby('model')['recall'].apply(list).to_dict(),
+        'Recall per Replication and Average Recall', 'Recall')
+
     plotter.plot_confusion_matrices(experiment.mean_conf_matrices)
     plotter.print_best_parameters(results)
     logger.info("Plots generated successfully.")
+
 
 
 def main():

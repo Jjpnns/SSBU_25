@@ -1,5 +1,8 @@
 from matplotlib import pyplot as plt
 from typing import Callable
+import os
+import datetime
+
 
 
 class BasePlotter:
@@ -15,11 +18,30 @@ class BasePlotter:
         - kwargs: Keyword arguments for the plotting function.
         """
         general_kwargs = {key: kwargs.pop(key, None) for key in ['title', 'xlabel', 'ylabel', 'xticks_rotation', 'yticks', 'yticklabels', 'xticks']}
+        # Vytvorenie výstupného priečinka
+        base_dir = os.path.join("machine_learning", "Plots")
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+        plot_name = general_kwargs.get('title', 'plot').replace(':', '').replace(' ', '_').lower()
+        output_dir = os.path.join(base_dir, f"{plot_name}_{timestamp}")
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Príprava cesty pre uloženie grafu
+        file_path = os.path.join(output_dir, f"{plot_name}.png")
+        index = 1
+        while os.path.exists(file_path):
+            file_path = os.path.join(output_dir, f"{plot_name}_{index}.png")
+            index += 1
+
+        # Kreslenie a ukladanie grafu
         plt.figure(figsize=kwargs.pop('figsize', (10, 6)))
         plot_func(*args, **kwargs)
         self.__apply_plot_labels(general_kwargs)
         plt.tight_layout()
+        plt.savefig(file_path)  # Uloženie grafu
         plt.show()
+        plt.close()
+
+        print(f"Graph saved as: {file_path}")
 
     def __apply_plot_labels(self, general_kwargs):
         """
